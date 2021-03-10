@@ -26,14 +26,6 @@ void rfm_init(void);
 void analog_init(void);
 void i2c_init(void);
 
-//HI HARPER
-<<<<<<< HEAD
-//hi dane
-//hi my mom
-=======
-//hi dane
->>>>>>> 3f156b476bbfb155a6d106af81b2676d5b409c73
-//hi my mom
 
 int main()
 {
