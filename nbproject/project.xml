@@ -3,7 +3,7 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>RFM95</name>
+            <name>ELEN227</name>
             <creation-uuid>e4b2eba0-fd1d-4da7-8366-9c63a81c855c</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions>c</c-extensions>
