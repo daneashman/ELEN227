@@ -11,9 +11,14 @@
 #define RFM_CMD_STBY            0b1000000100000001
 #define RFM_CMD_LORAMODE        0b1000000110000001
 #define RFM_CMD_READREGOPMODE   0b0000000100000000
+#define RFM_CMD_LOADTXREG_A     0b1000111010101010
+#define RFM_CMD_TX              0b1000000100000011
+#define RFM_CMD_SF7             0b1001111001110000  //CRC off
 
 void spi_init(void);
 uint8_t spi_write(uint16_t);
+void rfm_init(void);
+void lora_tx(void);
 
 //code that was in main:
 
@@ -106,9 +111,10 @@ void rfm_init(void)
     //7 bit reg address
     //8 bit data
     
-    spi_write(RFM_CMD_STBY);  //sleep mode
+    spi_write(RFM_CMD_STBY);
     spi_write(RFM_CMD_LORAMODE);  //lora mode, stby
-    spi_write(RFM_CMD_READREGOPMODE);    //read address op reg
+    printf("op mode reg = %b\n", spi_write(RFM_CMD_READREGOPMODE));    //read address op reg
+    spi_write(RFM_CMD_SF7);
     
     printf("RFM initiated.\n");
     printf("\n");
@@ -131,4 +137,9 @@ uint8_t spi_write(uint16_t data_in)
     printf(" Response: %d\n", data_out);
     
     return data_out;
+}
+
+void lora_tx(void){
+    spi_write(RFM_CMD_LOADTXREG_A); //put 10101010 into TX FIFO reg
+    spi_write(RFM_CMD_TX); //transmit
 }
