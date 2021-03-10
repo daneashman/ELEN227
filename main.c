@@ -27,6 +27,8 @@ void analog_init(void);
 void i2c_init(void);
 
 //HI HARPER
+//hi dane
+//hi my mom
 
 int main()
 {
