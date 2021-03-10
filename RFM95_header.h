@@ -123,13 +123,11 @@ uint8_t spi_write(uint16_t data_in)
     //SPI1BUFL = 0x00;
     //write date to Tx to the SPI1BUFL and SPI1BUFH registers
     //wnr bit is 0 for read, 1 for write
-    printf("Writing... ");
     SPI_CS = 0;
     SPI1BUFL = data_in;
     while(!SPI1STATLbits.SRMT); //while Current or pending transactions
     data_out = SPI1BUFL;
     SPI_CS = 1;
-    printf("Written. ");
     printf(" Response: %d\n", data_out);
     
     return data_out;
