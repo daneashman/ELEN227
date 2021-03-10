@@ -26,6 +26,8 @@ void rfm_init(void);
 void analog_init(void);
 void i2c_init(void);
 
+//hi from PC
+
 int main()
 {
     UART2_Initialize();
