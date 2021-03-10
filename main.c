@@ -27,6 +27,7 @@ void analog_init(void);
 void i2c_init(void);
 
 //hi from PC
+//hi PC
 
 int main()
 {
