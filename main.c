@@ -32,6 +32,7 @@ int main()
     
     spi_init();
     rfm_init();
+    lora_tx();
     
     /*i2c_init();
     
