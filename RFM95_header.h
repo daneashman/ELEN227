@@ -113,7 +113,7 @@ void rfm_init(void)
     
     spi_write(RFM_CMD_STBY);
     spi_write(RFM_CMD_LORAMODE);  //lora mode, stby
-    printf("op mode reg = %b\n", spi_write(RFM_CMD_READREGOPMODE));    //read address op reg
+    printf("op mode reg = %d\n", spi_write(RFM_CMD_READREGOPMODE));    //read address op reg
     spi_write(RFM_CMD_SF7);
     
     printf("RFM initiated.\n");
