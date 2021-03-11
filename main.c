@@ -22,7 +22,7 @@ uint8_t rx_data = 0;
 uint16_t tx_data = 0b0000000100000000;
 float ADC_out = 0;
 
-
+  
 void analog_init(void);
 void i2c_init(void);
 
