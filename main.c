@@ -34,7 +34,6 @@ int main()
     
     lora_tx();
     
-    
     /*i2c_init();
     
     while(1){
