@@ -8,19 +8,29 @@
 #define SPI_RESET LATBbits.LATB12
 
 //all addresses contain a write bit
-#define REG_OPMODE          0x81
-#define REG_TXBASE          0x8E
-#define REG_SYNCWORD_CON    0xA7
-#define REG_SYNCWORD        0xA8
+#define REG_TXFIFO          0x00
+#define REG_OPMODE          0x01
+#define REG_PACONFIG        0x09
+#define REG_PARAMP          0x0A
+#define REG_OCP             0x0B
+#define REG_LNA             0x0C
+#define REG_FIFO_ADDR_PTR   0x0D
+#define REG_TXBASE_ADDR     0x0E
+#define REG_MODEMCON1       0x1D
+#define REG_MODEMCON2       0x1E
+#define REG_PREAM_LEN_MSB   0x20
+#define REG_PREAM_LEN_LSB   0x21
+#define REG_PAYLOAD_LEN     0x22
+#define REG_PAYLOAD_MAXLEN  0x23
+#define REG_FREQ_HOPPING_T  0x24
+#define REG_MODEMCON3       0x26
+
+//already set write bit on these:
 #define REG_FRFMSB          0x86
 #define REG_FRFMID          0x87
 #define REG_FRFLSB          0x88
-#define REG_SF              0x9E
-#define REG_LNA             0x0C
-#define REG_MODEMCON        0x26
-#define REG_TXFIFO          0x00
-#define REG_FIFO_ADDR_PTR   0x0D
-#define REG_PAYLOAD_LENGTH  0x22
+
+//Tomorrow: set pre-lora mode settings according to REG dump
 
 void spi_init(void);
 uint8_t spi_write(uint16_t);
@@ -108,29 +118,59 @@ void rfm_init(void)
     //sleep mode
     rfm_write(REG_OPMODE, 0b00000000);
     
-    //frequency setup 915MHz
-    rfm_write(REG_FRFMSB, 0b11100100);
-    rfm_write(REG_FRFMID, 0b11000000);
-    rfm_write(REG_FRFLSB, 0b00000000);
-    
     //config and set sync word to 0x34
     rfm_write(REG_SYNCWORD_CON, 0b00010000);
     rfm_write(REG_SYNCWORD, 0x34);
     
-    //lora mode, sleep
+    //lora mode, sleep **************************************************
     rfm_write(REG_OPMODE, 0b10000000);
     
+    //frequency setup 915MHz
+    rfm_write(REG_FRFMSB, 0xA4);
+    rfm_write(REG_FRFMID, 0xC0);
+    rfm_write(REG_FRFLSB, 0x00);
+    
+    //configure power settings
+    rfm_write(REG_PACONFIG, 0x8F);
+    
+    //rise fall time
+    rfm_write(REG_PARAMP, 0x09);
+    
+    //current overload protection
+    rfm_write(REG_OCP, 0x2B);
+    
+    //LNA gain config
+    rfm_write(REG_LNA, 0x23);
+    
+    //FIFO pointers
+    rfm_write(REG_FIFO_ADDR_PTR, 0x04);
+    
     //set tx base addresss to 0
-    rfm_write(REG_TXBASE, 0);
+    rfm_write(REG_TXBASE_ADDR, 0x00);
     
-    //set LNA to 0x03
-    rfm_write(REG_LNA, 0x03);
+    //set BW = 125kHz and coding rate to 4/5, explicite header mode
+    rfm_write(REG_MODEMCON1, 0x72);
     
-    //auto AGC
-    rfm_write(REG_MODEMCON, 0x04);
+    //SF = 7, normal mode (single packet), CRC off
+    rfm_write(REG_MODEMCON2, 0x70);
     
-    //SF = 7, normal mode, CRC on,
-    rfm_write(REG_SF, 0b01110100);
+    //preamble length MSB = 0 + 4.25 symbols
+    rfm_write(REG_PREAM_LEN_MSB, 0x00)
+    
+    //preamble length LSB = 8
+    rfm_write(REG_PREAM_LEN_LSB, 0x08)
+    
+    //payload length = 3 bytes     
+    rfm_write(REG_PAYLOAD_LEN, 0x03)
+            
+    //payload max length = 0xFF   
+    rfm_write(REG_PAYLOAD_MAXLEN, 0xFF)  
+            
+    //set frequency hopping period to 0
+    rfm_write(REG_FREQ_HOPPING_T, 0x00)
+            
+    // LNA gain set by the internal AGC loop, static node
+    rfm_write(REG_MODEMCON3, 0x04)
     
     //Standby mode
     rfm_write(REG_OPMODE, 0b10000001);
@@ -140,8 +180,7 @@ void rfm_init(void)
 }
 
 //writes a 16-bit value to the SPI bus and saves the received value
-uint8_t spi_write(uint16_t data_in)
-{
+uint8_t spi_write(uint16_t data_in){
     uint8_t data_out = 0;
     
     while(SPI1STATLbits.SPIBUSY);
@@ -164,6 +203,8 @@ uint8_t rfm_write(uint8_t addr, uint8_t data){
 }
 
 void lora_tx(void){
+    printf("Sending...\n");
+    
     //put in standby
     rfm_write(REG_OPMODE, 0b10000001);
     
@@ -171,13 +212,25 @@ void lora_tx(void){
    
     //reset FIFO address and payload length
     rfm_write(REG_FIFO_ADDR_PTR, 0); 
-    rfm_write(REG_PAYLOAD_LENGTH, 0); 
+    rfm_write(REG_PAYLOAD_LENGTH, 1); 
     
     //fill tx buffer
-    rfm_write(REG_FIFO_ADDR_PTR, 0xAA); 
+    rfm_write(REG_TXFIFO, 0xAA); 
    
     //initiate transmission
     rfm_write(REG_OPMODE, 0b10000011);
     
-    
+    //wait for tx-done flag to set
+    int i;
+    for(i=0;i<5;i++){
+        uint8_t mask = 0b00001000;
+        uint8_t flags = rfm_write(REG_IRQ_FLAGS, 0);
+        flags = flags & mask;
+        if(mask = 0b00001000){
+            printf("tx complete\n");
+            break;
+        }
+        __delay_us(1000);
+    }
+    printf("end\n");
 }
