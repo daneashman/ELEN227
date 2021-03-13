@@ -1,7 +1,7 @@
 #include "elen116header3.h"
 #define FCY 8000000 
 #include <libpic30.h>
-#include "RFM95_header.h"
+#include "RFM95_header2.h"
 #include "SHT20_header.h"
 
 
@@ -32,7 +32,9 @@ int main()
     spi_init();
     rfm_init();
     
+    rfm_beginPacket();
     lora_tx();
+    rfm_endPacket();
     
     /*i2c_init();
     
