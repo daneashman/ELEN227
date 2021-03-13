@@ -7,32 +7,26 @@
 #define SPI_CS LATBbits.LATB3
 #define SPI_RESET LATBbits.LATB12
 
-#define RFM_CMD_SLEEP           0b1000000100000000
-#define RFM_CMD_STBY            0b1000000100000001
-#define RFM_CMD_LORAMODE        0b1000000110000001
-#define RFM_CMD_READREGOPMODE   0b0000000100000000
-#define RFM_CMD_LOADTXREG_A     0b1000000010101010
-#define RFM_CMD_TX              0b1000000100000011
-#define RFM_CMD_SF7             0b1001111001110000  //CRC off
+//all addresses contain a write bit
+#define REG_OPMODE          0x81
+#define REG_TXBASE          0x8E
+#define REG_SYNCWORD_CON    0xA7
+#define REG_SYNCWORD        0xA8
+#define REG_FRFMSB          0x86
+#define REG_FRFMID          0x87
+#define REG_FRFLSB          0x88
+#define REG_SF              0x9E
+#define REG_LNA             0x0C
+#define REG_MODEMCON        0x26
+#define REG_TXFIFO          0x00
+#define REG_FIFO_ADDR_PTR   0x0D
+#define REG_PAYLOAD_LENGTH  0x22
 
 void spi_init(void);
 uint8_t spi_write(uint16_t);
 void rfm_init(void);
 void lora_tx(void);
-
-//code that was in main:
-
-/*spi_init();
-    rfm_init();
-    
-    ANSD = 0;
-    ODCD = 0;
-    sendBTN_DIR = 1;
-    
-    while(1){
-        while(sendBTN);
-        printf("response: %d\n", spi_write(tx_data));
-    }*/
+uint8_t rfm_write(uint8_t,uint8_t);
 
 //initializes all needed PORTS and maps SPI to peripheral pins
 void spi_init(void)
@@ -105,18 +99,41 @@ void spi_init(void)
 //sets initial settings on the RFM95 module that are needed for transmission
 void rfm_init(void)
 {
-    printf("RFM init... \n");
+    printf("RFM init... ");
     
     //start with read or write bit, 1=w 0=r
     //7 bit reg address
     //8 bit data
     
-    spi_write(RFM_CMD_STBY);
-    spi_write(RFM_CMD_LORAMODE);  //lora mode, stby
-    printf("op mode reg = %d\n", spi_write(RFM_CMD_READREGOPMODE));    //read address op reg
-    spi_write(RFM_CMD_SF7);
+    //sleep mode
+    rfm_write(REG_OPMODE, 0b00000000);
     
-    //set sync code 0x28 is FSK registers
+    //frequency setup 915MHz
+    rfm_write(REG_FRFMSB, 0b11100100);
+    rfm_write(REG_FRFMID, 0b11000000);
+    rfm_write(REG_FRFLSB, 0b00000000);
+    
+    //config and set sync word to 0x34
+    rfm_write(REG_SYNCWORD_CON, 0b00010000);
+    rfm_write(REG_SYNCWORD, 0x34);
+    
+    //lora mode, sleep
+    rfm_write(REG_OPMODE, 0b10000000);
+    
+    //set tx base addresss to 0
+    rfm_write(REG_TXBASE, 0);
+    
+    //set LNA to 0x03
+    rfm_write(REG_LNA, 0x03);
+    
+    //auto AGC
+    rfm_write(REG_MODEMCON, 0x04);
+    
+    //SF = 7, normal mode, CRC on,
+    rfm_write(REG_SF, 0b01110100);
+    
+    //Standby mode
+    rfm_write(REG_OPMODE, 0b10000001);
     
     printf("RFM initiated.\n");
     printf("\n");
@@ -136,12 +153,31 @@ uint8_t spi_write(uint16_t data_in)
     while(!SPI1STATLbits.SRMT); //while Current or pending transactions
     data_out = SPI1BUFL;
     SPI_CS = 1;
-    printf(" Response: %d\n", data_out);
+    //printf(" Response: %d\n", data_out);
     
     return data_out;
 }
 
+uint8_t rfm_write(uint8_t addr, uint8_t data){
+    uint16_t to_send = (addr << 8) | data;
+    return spi_write(to_send);
+}
+
 void lora_tx(void){
-    spi_write(RFM_CMD_LOADTXREG_A); //put 10101010 into TX FIFO reg
-    spi_write(RFM_CMD_TX); //transmit
+    //put in standby
+    rfm_write(REG_OPMODE, 0b10000001);
+    
+    //check header mode (explixite or implicite)??
+   
+    //reset FIFO address and payload length
+    rfm_write(REG_FIFO_ADDR_PTR, 0); 
+    rfm_write(REG_PAYLOAD_LENGTH, 0); 
+    
+    //fill tx buffer
+    rfm_write(REG_FIFO_ADDR_PTR, 0xAA); 
+   
+    //initiate transmission
+    rfm_write(REG_OPMODE, 0b10000011);
+    
+    
 }
