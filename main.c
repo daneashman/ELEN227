@@ -28,11 +28,12 @@ void i2c_init(void);
 
 int main()
 {
-    UART2_Initialize();
-    
+    UART2_Initialize(); 
     spi_init();
     rfm_init();
+    
     lora_tx();
+    
     
     /*i2c_init();
     
