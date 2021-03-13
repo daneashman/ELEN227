@@ -263,9 +263,9 @@ void lora_tx(void){
     rfm_write(REG_OP_MODE, 0x81);
     
     //fill tx buffer
-    rfm_write(REG_FIFO, 'H');
-    rfm_write(REG_FIFO, 'I');
-    rfm_write(REG_FIFO, 'D');
+    rfm_write(REG_FIFO, 69);
+    rfm_write(REG_FIFO, 11);
+    rfm_write(REG_FIFO, 12);
     
     // set length to 1 byte
     rfm_write(REG_PAYLOAD_LENGTH, 0x03);
